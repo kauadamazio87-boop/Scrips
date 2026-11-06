@@ -1,58 +1,79 @@
+-- Carrega a biblioteca Rayfield
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- CONFIGURAÇÕES
+-- CONFIGURAÇÕES INICIAIS (Mantidas do seu script)
 local VELOCIDADE_MIRA = 0.9 
 local FOV_RAIO = 180 
-_G.AimbotAtivado = true
+local AimbotAtivado = true
+local TiroAutomatico = true
 
--- INTERFACE OTIMIZADA (Não bloqueia os controles)
-local function criarMenu()
-    -- Se já existir um menu, remove para não duplicar
-    if LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("DeltaAimbotSafe") then
-        LocalPlayer.PlayerGui.DeltaAimbotSafe:Destroy()
-    end
+-- ============================================
+-- CRIA A JANELA DO RAYFIELD
+-- ============================================
+local Window = Rayfield:CreateWindow({
+   Name = "Rayfield Aimbot",
+   LoadingTitle = "Carregando...",
+   LoadingSubtitle = "by Delta Mobile",
+   ConfigurationSaving = { Enabled = false },
+   KeySystem = false
+})
 
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "DeltaAimbotSafe"
-    -- ResetOnSpawn falso evita que o botão suma quando você morre
-    ScreenGui.ResetOnSpawn = false 
-    -- IgnoreGuiInset garante que o botão não empurre os controles do jogo
-    ScreenGui.IgnoreGuiInset = true 
-    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+local Tab = Window:CreateTab("Aimbot", 4483362458)
 
-    local MainButton = Instance.new("TextButton")
-    MainButton.Size = UDim2.new(0, 110, 0, 40)
-    -- Posição alterada para o topo direito (longe do analógico e do botão de pulo)
-    MainButton.Position = UDim2.new(0.8, 0, 0.05, 0) 
-    MainButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    MainButton.BackgroundTransparency = 0.3 -- Um pouco transparente para ver o mapa atrás
-    MainButton.TextColor3 = Color3.fromRGB(0, 255, 127)
-    MainButton.Text = "AIM: LIGADO"
-    MainButton.Font = Enum.Font.GothamBold
-    MainButton.TextSize = 14
-    MainButton.Parent = ScreenGui
+-- ============================================
+-- CONTROLES DA INTERFACE
+-- ============================================
+Tab:CreateToggle({
+   Name = "Ativar Aimbot",
+   CurrentValue = AimbotAtivado,
+   Flag = "AimbotToggle",
+   Callback = function(State)
+       AimbotAtivado = State
+   end,
+})
 
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 10)
-    Corner.Parent = MainButton
+Tab:CreateToggle({
+   Name = "Tiro Automático",
+   CurrentValue = TiroAutomatico,
+   Flag = "TiroAuto",
+   Callback = function(State)
+       TiroAutomatico = State
+   end,
+})
 
-    MainButton.MouseButton1Click:Connect(function()
-        _G.AimbotAtivado = not _G.AimbotAtivado
-        if _G.AimbotAtivado then
-            MainButton.Text = "AIM: LIGADO"
-            MainButton.TextColor3 = Color3.fromRGB(0, 255, 127)
-        else
-            MainButton.Text = "AIM: DESLIGADO"
-            MainButton.TextColor3 = Color3.fromRGB(255, 50, 50)
-        end
-    end)
-end
+Tab:CreateSlider({
+   Name = "Velocidade da Mira",
+   Range = {10, 100},
+   Increment = 5,
+   Suffix = "%",
+   CurrentValue = 90, -- 90 = 0.9
+   Flag = "VelocidadeMira",
+   Callback = function(Value)
+       VELOCIDADE_MIRA = Value / 100
+   end,
+})
 
--- CHECAGEM DE VISIBILIDADE
+Tab:CreateSlider({
+   Name = "Tamanho do FOV",
+   Range = {50, 500},
+   Increment = 10,
+   Suffix = "px",
+   CurrentValue = 180,
+   Flag = "FOV",
+   Callback = function(Value)
+       FOV_RAIO = Value
+   end,
+})
+
+-- ============================================
+-- LÓGICA DO SEU AIMBOT (MANTIDA)
+-- ============================================
 local function estaVisivel(targetPart)
     local character = LocalPlayer.Character
     if not character then return false end
@@ -63,7 +84,6 @@ local function estaVisivel(targetPart)
     return result and result.Instance:IsDescendantOf(targetPart.Parent)
 end
 
--- BUSCA DE ALVO
 local function getTarget()
     local closest = nil
     local dist = FOV_RAIO
@@ -87,16 +107,21 @@ local function getTarget()
     return closest
 end
 
--- LOOP
+-- ============================================
+-- LOOP PRINCIPAL
+-- ============================================
 RunService.RenderStepped:Connect(function()
-    if _G.AimbotAtivado then
+    if AimbotAtivado then
         local alvo = getTarget()
         if alvo then
             Camera.CFrame = Camera.CFrame:Lerp(CFrame.lookAt(Camera.CFrame.Position, alvo.Position), VELOCIDADE_MIRA)
-            local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
-            if tool then tool:Activate() end
+            
+            if TiroAutomatico then
+                local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+                if tool then tool:Activate() end
+            end
         end
     end
 end)
 
-criarMenu()
+print("✅ Aimbot Rayfield carregado com sucesso!")
